@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store';
 import { MapPin, Calendar, DollarSign, Utensils, Car, Heart, ArrowRight, Plus, X } from 'lucide-react';
 import { Autocomplete, useJsApiLoader } from '@react-google-maps/api';
-import TrialLimitModal from '../components/TrialLimitModal';
 
 const DINING_OPTIONS = ['Local Gems', 'Michelin Star', 'Street Food', 'Trendy & Modern', 'Vegetarian', 'Halal', 'Other'];
 const TRANSPORT_OPTIONS = ['Public Transit', 'Car Rental', 'Taxi / Uber', 'Walking', 'Bicycle', 'Self-drive'];
@@ -31,7 +30,6 @@ export default function Preferences() {
   const [otherDiningInput, setOtherDiningInput] = useState('');
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
   const [destinationInput, setDestinationInput] = useState('');
-  const [showLimitModal, setShowLimitModal] = useState(false);
 
   const googleMapsApiKey = (import.meta as any).env.VITE_GOOGLE_MAPS_API_KEY || '';
   const { isLoaded } = useJsApiLoader({
@@ -76,21 +74,6 @@ export default function Preferences() {
   };
 
   const handleNext = () => {
-    const { tripCount, recentTrips, loadedTripName } = useAppStore.getState();
-    
-    if (tripCount >= 1) {
-      const tripName = localPrefs.destinations.length > 0 
-        ? `Trip to ${localPrefs.destinations.join(', ')}`
-        : (loadedTripName || `Trip on ${new Date().toLocaleDateString()}`);
-        
-      const isExistingTrip = recentTrips.some(t => t.name === tripName);
-      
-      if (!isExistingTrip) {
-        setShowLimitModal(true);
-        return;
-      }
-    }
-
     const finalDining = localPrefs.dining.map(d => d === 'Other' ? `Other: ${otherDiningInput}` : d);
     setPreferences({ ...localPrefs, dining: finalDining });
     unlockSection('explore');
@@ -317,8 +300,6 @@ export default function Preferences() {
           <ArrowRight className="w-5 h-5" />
         </button>
       </div>
-
-      <TrialLimitModal isOpen={showLimitModal} onClose={() => setShowLimitModal(false)} />
     </div>
   );
 }

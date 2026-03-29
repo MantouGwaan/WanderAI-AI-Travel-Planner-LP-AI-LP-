@@ -53,102 +53,12 @@ I've meticulously crafted a **${preferences.duration}-day itinerary** that balan
 *   **Timing is Everything:** To avoid the crowds at major attractions, I've scheduled them for early morning or late afternoon.
 *   **Local Flavors:** I've included hand-picked dining spots that offer authentic local cuisine, including options for your specific dietary needs.
 
-How would you like to refine your experience today? I can adjust the pace, swap destinations, or add more specialized activities.` }
+How would you like to refine your experience today? I can swap destinations, or add more specialized activities.` }
   ]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
-  const chatSessionRef = useRef<any>(null);
   
-  // Initialize or re-initialize chat session when itinerary is ready
-  useEffect(() => {
-    if (itinerary.length > 0 && !chatSessionRef.current) {
-      const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
-      const genAI = new GoogleGenAI({ apiKey: apiKey || '' });
-      const systemInstruction = getChatSystemInstruction(preferences, preferences.currency);
-      const itinerarySchema = {
-        type: Type.ARRAY,
-        items: {
-          type: Type.OBJECT,
-          properties: {
-            day: { type: Type.NUMBER },
-            items: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  id: { type: Type.STRING },
-                  type: { type: Type.STRING },
-                  title: { type: Type.STRING },
-                  startTime: { type: Type.STRING },
-                  endTime: { type: Type.STRING },
-                  details: { type: Type.STRING },
-                  price: { type: Type.STRING },
-                  location: {
-                    type: Type.OBJECT,
-                    properties: {
-                      lat: { type: Type.NUMBER },
-                      lng: { type: Type.NUMBER }
-                    }
-                  },
-                  transportMode: { type: Type.STRING }
-                },
-                required: ['id', 'type', 'title', 'startTime', 'endTime', 'location']
-              }
-            }
-          },
-          required: ['day', 'items']
-        }
-      };
-
-      const chat = genAI.chats.create({
-        model: 'gemini-3-flash-preview',
-        config: {
-          systemInstruction,
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              message: { type: Type.STRING },
-              updatedItinerary: itinerarySchema,
-              alternatives: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    id: { type: Type.STRING },
-                    title: { type: Type.STRING },
-                    description: { type: Type.STRING },
-                    action: { type: Type.STRING },
-                    data: { 
-                      type: Type.OBJECT,
-                      properties: {
-                        updatedItinerary: itinerarySchema
-                      }
-                    }
-                  },
-                  required: ['id', 'title', 'description', 'action']
-                }
-              }
-            },
-            required: ['message', 'updatedItinerary']
-          }
-        },
-        history: [
-          {
-            role: "user",
-            parts: [{ text: "这是我目前的初步计划：" + JSON.stringify(itinerary) }],
-          },
-          {
-            role: "model",
-            parts: [{ text: "收到。我会基于此计划进行增量修改。" }],
-          }
-        ],
-      });
-      chatSessionRef.current = chat;
-    }
-  }, [itinerary.length > 0, preferences]);
-
   const googleMapsApiKey = (import.meta as any).env.VITE_GOOGLE_MAPS_API_KEY || '';
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
@@ -421,18 +331,13 @@ How would you like to refine your experience today? I can adjust the pace, swap 
           const systemInstruction = getItinerarySystemInstruction(preferences);
           const prompt = getItineraryPrompt(preferences, attractionsContext);
 
-          const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
-          if (!apiKey || apiKey === 'undefined') {
-            throw new Error('VITE_GEMINI_API_KEY is missing. Please configure it in the AI Studio Secrets panel.');
-          }
-          
-          const genAI = new GoogleGenAI({ apiKey });
-          const response = await genAI.models.generateContent({
-            model: 'gemini-3-flash-preview',
+          const ai = new GoogleGenAI({ apiKey: (import.meta as any).env.VITE_GEMINI_API_KEY });
+          const response = await ai.models.generateContent({
+            model: 'gemini-3.1-pro-preview',
             contents: prompt,
             config: {
               systemInstruction,
-              responseMimeType: 'application/json'
+              responseMimeType: 'application/json',
             }
           });
 
@@ -597,35 +502,99 @@ How would you like to refine your experience today? I can adjust the pace, swap 
     setIsTyping(true);
     
     try {
-      if (!chatSessionRef.current) {
-        // Fallback if session wasn't initialized
-        const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
-        if (!apiKey || apiKey === 'undefined') {
-          throw new Error('VITE_GEMINI_API_KEY is missing. Please configure it in the AI Studio Secrets panel.');
-        }
-        const genAI = new GoogleGenAI({ apiKey });
         const systemInstruction = getChatSystemInstruction(preferences, preferences.currency);
-        chatSessionRef.current = genAI.chats.create({
-          model: 'gemini-3-flash-preview',
+        
+        const chatHistory = [
+          {
+            role: "user",
+            parts: [{ text: "Here is my current preliminary plan: " + JSON.stringify(itinerary) }],
+          },
+          {
+            role: "model",
+            parts: [{ text: "Received. I will make incremental modifications based on this plan." }],
+          },
+          ...messages.map(m => ({
+            role: m.role === 'ai' ? 'model' : 'user',
+            parts: [{ text: m.text }]
+          }))
+        ];
+
+        const itinerarySchema = {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              day: { type: Type.NUMBER },
+              items: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    id: { type: Type.STRING },
+                    type: { type: Type.STRING },
+                    title: { type: Type.STRING },
+                    startTime: { type: Type.STRING },
+                    endTime: { type: Type.STRING },
+                    details: { type: Type.STRING },
+                    price: { type: Type.STRING },
+                    location: {
+                      type: Type.OBJECT,
+                      properties: {
+                        lat: { type: Type.NUMBER },
+                        lng: { type: Type.NUMBER }
+                      }
+                    },
+                    transportMode: { type: Type.STRING }
+                  },
+                  required: ['id', 'type', 'title', 'startTime', 'endTime', 'location']
+                }
+              }
+            },
+            required: ['day', 'items']
+          }
+        };
+
+        const responseSchema = {
+          type: Type.OBJECT,
+          properties: {
+            message: { type: Type.STRING },
+            updatedItinerary: itinerarySchema,
+            alternatives: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  id: { type: Type.STRING },
+                  title: { type: Type.STRING },
+                  description: { type: Type.STRING },
+                  action: { type: Type.STRING },
+                  data: { 
+                    type: Type.OBJECT,
+                    properties: {
+                      updatedItinerary: itinerarySchema
+                    }
+                  }
+                },
+                required: ['id', 'title', 'description', 'action']
+              }
+            }
+          },
+          required: ['message', 'updatedItinerary']
+        };
+
+        const ai = new GoogleGenAI({ apiKey: (import.meta as any).env.VITE_GEMINI_API_KEY });
+        const chat = ai.chats.create({
+          model: 'gemini-3.1-pro-preview',
           config: {
             systemInstruction,
-            responseMimeType: "application/json",
+            responseMimeType: 'application/json',
+            responseSchema
           },
-          history: [
-            {
-              role: "user",
-              parts: [{ text: "这是我目前的初步计划：" + JSON.stringify(itinerary) }],
-            },
-            {
-              role: "model",
-              parts: [{ text: "收到。我会基于此计划进行增量修改。" }],
-            }
-          ],
+          history: chatHistory
         });
-      }
 
-      const response = await chatSessionRef.current.sendMessage({ message: textToSend });
-      const result = JSON.parse(response.text || '{}');
+        const response = await chat.sendMessage({ message: textToSend });
+        const result = JSON.parse(response.text || '{}');
       
       if (result.message) {
         setMessages(prev => [...prev, { 

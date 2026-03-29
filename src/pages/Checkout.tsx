@@ -1,14 +1,8 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../store';
-import { CreditCard, Calendar, MapPin, CheckCircle2, ArrowRight, Plane, Hotel, Car, FileText, Mail, X, RefreshCw, Loader2 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { CreditCard, Calendar, MapPin, CheckCircle2, ArrowRight, Plane, Hotel, Car, Mail, X, RefreshCw, Loader2 } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { formatDestinations } from '../utils';
-
-declare global {
-  interface Window {
-    html2pdf: any;
-  }
-}
 
 export default function Checkout() {
   const { preferences, itinerary } = useAppStore();
@@ -16,7 +10,7 @@ export default function Checkout() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const [isEmailSending, setIsEmailSending] = useState(false);
-  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const navigate = useNavigate();
 
   const totalDays = preferences.duration;
   const totalAttractions = itinerary.reduce((acc, day) => acc + day.items.filter(i => i.type === 'attraction').length, 0);
@@ -28,72 +22,53 @@ export default function Checkout() {
     if (!emailInput) return;
     
     setIsEmailSending(true);
-    // Simulate API call
-    console.log(`[Lead Capture] Sending itinerary to: ${emailInput}`);
-    
-    // PDF Generation
-    setIsGeneratingPdf(true);
-    
-    // Wait for DOM to update with PDF-specific content
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    const element = document.getElementById('itinerary-content');
-    
-    if (element && window.html2pdf) {
-      const opt = {
-        margin: 10,
-        filename: `WanderAI_Trip_to_${destination}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { 
-          useCORS: true, 
-          scale: 2,
-          letterRendering: true,
-          scrollY: 0
+    try {
+      const response = await fetch('https://formspree.io/f/mbdpgowy', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      };
+        body: JSON.stringify({ 
+          email: emailInput,
+          message: `Itinerary for ${destination} (${totalDays} days)`,
+          itinerary: itinerary
+        })
+      });
 
-      try {
-        await window.html2pdf().from(element).set(opt).save();
-      } catch (err) {
-        console.error('PDF Generation Error:', err);
+      if (response.ok) {
+        setIsSuccess(true);
+      } else {
+        console.error('Formspree submission failed');
       }
+    } catch (error) {
+      console.error('Error submitting to Formspree:', error);
     }
-
-    setIsGeneratingPdf(false);
     setIsEmailSending(false);
-    setIsSuccess(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsEmailModalOpen(false);
+    setIsSuccess(false);
+    setEmailInput('');
+  };
+
+  const handleReturnHome = () => {
+    handleCloseModal();
+    navigate('/');
   };
 
   return (
     <div className="max-w-4xl mx-auto p-8 pb-32 relative">
-      {/* PDF Generation Loading Overlay */}
-      {isGeneratingPdf && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[200] flex items-center justify-center">
-          <div className="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-4 animate-in zoom-in-95 duration-200">
-            <div className="relative">
-              <RefreshCw className="w-12 h-12 text-emerald-600 animate-spin" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <FileText className="w-5 h-5 text-emerald-600" />
-              </div>
-            </div>
-            <div className="text-center">
-              <h4 className="text-lg font-bold text-slate-900">Generating high-resolution document...</h4>
-              <p className="text-sm text-slate-500">Please wait while we prepare your bespoke itinerary.</p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Email Modal */}
       {isEmailModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-slate-100 flex justify-between items-center">
               <h3 className="text-xl font-bold text-slate-900">
-                {isSuccess ? 'Itinerary Secured.' : 'Where should we send your backup copy?'}
+                {isSuccess ? 'Successfully Joined Waitlist' : 'Project Not Yet Launched'}
               </h3>
-              <button onClick={() => { setIsEmailModalOpen(false); setIsSuccess(false); setEmailInput(''); }} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+              <button onClick={handleReturnHome} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
                 <X className="w-5 h-5 text-slate-400" />
               </button>
             </div>
@@ -104,33 +79,33 @@ export default function Checkout() {
                   <CheckCircle2 className="w-10 h-10 text-emerald-600" />
                 </div>
                 <div className="space-y-2">
-                  <h4 className="text-2xl font-bold text-slate-900">Itinerary Secured.</h4>
+                  <h4 className="text-2xl font-bold text-slate-900">Thank you for your interest!</h4>
                   <p className="text-slate-600">
-                    Email sync is in beta. Your PDF is ready for immediate download below.
+                    You've successfully joined the waitlist. We'll notify you as soon as we're live.
                   </p>
                 </div>
                 <button 
-                  onClick={() => { setIsEmailModalOpen(false); setIsSuccess(false); setEmailInput(''); }}
-                  className="w-full bg-emerald-900 text-white py-4 rounded-xl font-bold hover:bg-emerald-800 transition-all flex items-center justify-center gap-2"
+                  onClick={handleReturnHome}
+                  className="w-full bg-emerald-600 text-white py-4 rounded-xl font-bold hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
                 >
-                  Join the Waitlist
+                  Back to Home
                 </button>
               </div>
             ) : (
               <form onSubmit={handleSendEmail} className="p-8 space-y-6">
                 <div className="text-center space-y-2">
-                  <div className="w-16 h-16 bg-lime-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <Mail className="w-8 h-8 text-lime-600" />
+                  <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <Mail className="w-8 h-8 text-emerald-600" />
                   </div>
-                  <p className="text-slate-600">Enter your email address to receive a deep-dive itinerary with maps, booking links, and expert tips.</p>
+                  <p className="text-slate-600">Coming soon! Leave your email, and we'll notify you as soon as we launch.</p>
                 </div>
                 <input 
                   type="email" 
                   required
-                  placeholder="your@email.com"
+                  placeholder="Your email address"
                   value={emailInput}
                   onChange={e => setEmailInput(e.target.value)}
-                  className="w-full px-4 py-3.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-lime-500 focus:border-transparent outline-none transition-all"
+                  className="w-full px-4 py-3.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
                 />
                 <button 
                   type="submit"
@@ -139,10 +114,10 @@ export default function Checkout() {
                 >
                   {isEmailSending ? (
                     <>
-                      <RefreshCw className="w-5 h-5 animate-spin" />
-                      Processing your premium itinerary...
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Submitting...
                     </>
-                  ) : 'Send Now'}
+                  ) : 'Join Waitlist'}
                 </button>
               </form>
             )}
@@ -150,80 +125,31 @@ export default function Checkout() {
         </div>
       )}
       <div id="itinerary-content" className="bg-white pb-20 px-4" style={{ colorScheme: 'light' }}>
-        {/* PDF Header - Only visible during generation */}
-        {isGeneratingPdf && (
-          <div className="mb-12 border-b-2 border-slate-100 pb-8">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="bg-emerald-600 p-2 rounded-xl">
-                  <CheckCircle2 className="w-8 h-8 text-white" />
-                </div>
-                <span className="text-2xl font-black text-slate-900 tracking-tighter">WanderAI</span>
-              </div>
-              <div className="text-right">
-                <h1 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Your Bespoke Itinerary</h1>
-                <p className="text-xs text-slate-400">{new Date().toLocaleDateString()}</p>
-              </div>
-            </div>
+        {/* Screen Header */}
+        <div className="mb-10 flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold text-slate-900 mb-2 tracking-tight flex items-center gap-3">
+              <CheckCircle2 className="text-emerald-500 w-10 h-10" />
+              Trip Confirmed!
+            </h1>
+            <p className="text-lg text-slate-600">
+              Your {totalDays}-day adventure to {destination} is ready.
+            </p>
           </div>
-        )}
-
-        {/* PDF Summary Section - Only visible during generation */}
-        {isGeneratingPdf && (
-          <div className="mb-12 bg-slate-50 rounded-3xl p-8 border border-slate-100">
-            <h2 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
-              <CreditCard className="w-5 h-5 text-emerald-600" />
-              Trip Summary
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-              <div>
-                <p className="text-xs font-bold text-slate-400 uppercase mb-1">Destination</p>
-                <p className="font-bold text-slate-900">{destination}</p>
-              </div>
-              <div>
-                <p className="text-xs font-bold text-slate-400 uppercase mb-1">Duration</p>
-                <p className="font-bold text-slate-900">{totalDays} Days</p>
-              </div>
-              <div>
-                <p className="text-xs font-bold text-slate-400 uppercase mb-1">Budget</p>
-                <p className="font-bold text-slate-900">{preferences.budget}</p>
-              </div>
-              <div>
-                <p className="text-xs font-bold text-slate-400 uppercase mb-1">Attractions</p>
-                <p className="font-bold text-slate-900">{totalAttractions}</p>
-              </div>
-            </div>
+          <div className="hidden md:flex items-center gap-2 text-sm font-medium text-slate-500 bg-slate-100 px-4 py-2 rounded-full">
+            <Calendar className="w-4 h-4" />
+            {totalDays} Days
+            <span className="mx-2 text-slate-300">|</span>
+            <MapPin className="w-4 h-4" />
+            {destination}
           </div>
-        )}
+        </div>
 
-        {/* Screen Header - Hidden during generation */}
-        {!isGeneratingPdf && (
-          <div className="mb-10 flex items-center justify-between">
-            <div>
-              <h1 className="text-4xl font-bold text-slate-900 mb-2 tracking-tight flex items-center gap-3">
-                <CheckCircle2 className="text-emerald-500 w-10 h-10" />
-                Trip Confirmed!
-              </h1>
-              <p className="text-lg text-slate-600">
-                Your {totalDays}-day adventure to {destination} is ready.
-              </p>
-            </div>
-            <div className="hidden md:flex items-center gap-2 text-sm font-medium text-slate-500 bg-slate-100 px-4 py-2 rounded-full">
-              <Calendar className="w-4 h-4" />
-              {totalDays} Days
-              <span className="mx-2 text-slate-300">|</span>
-              <MapPin className="w-4 h-4" />
-              {destination}
-            </div>
-          </div>
-        )}
-
-        <div className={isGeneratingPdf ? "w-full" : "grid grid-cols-1 md:grid-cols-3 gap-8"}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           
           {/* Main Content: Booking Links & Itinerary Summary */}
-          <div className={isGeneratingPdf ? "w-full space-y-8" : "md:col-span-2 space-y-8"}>
-            {!isGeneratingPdf && (
-              <section className="print:hidden">
+          <div className="md:col-span-2 space-y-8">
+            <section className="print:hidden">
                 <h2 className="text-2xl font-bold text-slate-900 mb-4">Next Steps: Bookings</h2>
                 <div className="space-y-4">
                   {/* Flights */}
@@ -290,7 +216,6 @@ export default function Checkout() {
                   </div>
                 </div>
               </section>
-            )}
 
             {/* Itinerary Summary */}
             <section className="space-y-6">
@@ -329,8 +254,7 @@ export default function Checkout() {
           </div>
 
           {/* Sidebar: Summary */}
-          {!isGeneratingPdf && (
-            <div className="md:col-span-1 print:hidden">
+          <div className="md:col-span-1 print:hidden">
               <div className="bg-slate-900 text-white p-6 rounded-3xl shadow-xl sticky top-6">
                 <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
                   <CreditCard className="w-5 h-5 text-emerald-400" />
@@ -363,7 +287,7 @@ export default function Checkout() {
                 <div className="flex flex-col gap-3">
                   <button 
                     onClick={() => setIsEmailModalOpen(true)}
-                    className="w-full bg-emerald-900 text-white py-4 rounded-xl font-bold hover:bg-emerald-800 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/20"
+                    className="w-full bg-emerald-600 text-white py-4 rounded-xl font-bold hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20"
                   >
                     <Mail className="w-5 h-5" />
                     Send to email
@@ -374,7 +298,6 @@ export default function Checkout() {
                 </Link>
               </div>
             </div>
-          )}
 
         </div>
       </div>

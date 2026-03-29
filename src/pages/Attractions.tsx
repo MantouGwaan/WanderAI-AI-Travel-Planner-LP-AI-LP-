@@ -69,7 +69,7 @@ const MOCK_ATTRACTIONS: Attraction[] = [
     tags: ['Views', 'Modern', 'Family'],
     category: 'Sightseeing',
     openHours: '10:00 - 21:00',
-    price: '¥2,100',
+    price: '$15',
     duration: 2,
     location: { lat: 35.7100, lng: 139.8107 },
     reviews: [
@@ -126,19 +126,15 @@ export default function Attractions() {
 
       setIsLoading(true);
       try {
-        const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
-        if (!apiKey || apiKey === 'undefined') {
-          throw new Error("VITE_GEMINI_API_KEY is missing or undefined. Please set it in the Secrets panel.");
-        }
-        const ai = new GoogleGenAI({ apiKey });
         const targetCountPerCity = 5;
         const targetCount = destinations.length * targetCountPerCity;
         const interestsStr = preferences.interests.length > 0 ? preferences.interests.join(', ') : 'general tourist attractions';
         
         const prompt = getAttractionsPrompt(destinations, targetCountPerCity, interestsStr, preferences.currency);
 
+        const ai = new GoogleGenAI({ apiKey: (import.meta as any).env.VITE_GEMINI_API_KEY });
         const response = await ai.models.generateContent({
-          model: 'gemini-3-flash-preview',
+          model: 'gemini-3.1-pro-preview',
           contents: prompt,
           config: {
             systemInstruction: ATTRACTIONS_SYSTEM_INSTRUCTION,
