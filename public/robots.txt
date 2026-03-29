@@ -1,0 +1,6 @@
+# 允许所有搜索引擎抓取 WanderAI
+User-agent: *
+Allow: /
+
+# 告诉搜索引擎你的站点地图在哪里
+Sitemap: https://wanderai-virid.vercel.app/sitemap.xml
