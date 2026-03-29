@@ -8,6 +8,7 @@ interface WaitlistModalProps {
   title?: string;
   description?: string;
   onSuccess?: () => void;
+  formLocation?: string;
 }
 
 export default function WaitlistModal({ 
@@ -15,7 +16,8 @@ export default function WaitlistModal({
   onClose, 
   title = "Project Not Yet Launched", 
   description = "Coming soon! Leave your email, and we'll notify you as soon as we launch.",
-  onSuccess 
+  onSuccess,
+  formLocation = 'lp_top_form'
 }: WaitlistModalProps) {
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,6 +51,12 @@ export default function WaitlistModal({
 
       if (response.ok) {
         setIsSuccess(true);
+        
+        // GA Tracking
+        if (window.trackLeadGeneration) {
+          window.trackLeadGeneration(formLocation);
+        }
+
         if (onSuccess) onSuccess();
       } else {
         console.error('Formspree submission failed');

@@ -5,14 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>WanderAI | AI Travel Planner</title>
 
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-72SGKPJPCQ"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag() {
         dataLayer.push(arguments);
       }
       gtag("js", new Date());
-      gtag("config", "G-XXXXXXXXXX");
+      gtag("config", "G-72SGKPJPCQ");
+
+      // Global tracking functions
+      window.trackDemoClick = function(buttonLocation) {
+        if (typeof window.gtag === 'function') {
+          window.gtag('event', 'click_demo_entry', {
+            'button_location': buttonLocation
+          });
+          console.log('GA Event Sent: click_demo_entry at', buttonLocation);
+        }
+      };
+
+      window.trackLeadGeneration = function(formLocation) {
+        if (typeof window.gtag === 'function') {
+          window.gtag('event', 'generate_lead', {
+            'form_location': formLocation
+          });
+          console.log('GA Conversion Sent: generate_lead from', formLocation);
+        }
+      };
     </script>
 
     <script type="text/javascript">

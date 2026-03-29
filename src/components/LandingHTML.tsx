@@ -25,18 +25,40 @@ const LandingHTML = React.memo(({
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const planningButtons = ["nav-cta", "hero-cta", "footer-cta", "archive-start-btn"];
+    const planningButtons = ["nav-cta", "hero-cta", "footer-cta", "archive-start-btn", "footer-nav-open-app"];
     const pricingButtons = ["pricing-free-btn", "pricing-pro-btn"];
     const langToggle = containerRef.current?.querySelector("#lang-toggle");
     const ctaButtons = [...planningButtons, ...pricingButtons];
 
     const handlePlanningClick = (e: Event) => {
       e.preventDefault();
+      const target = e.currentTarget as HTMLElement;
+      const id = target.id;
+      
+      // GA Tracking
+      if (window.trackDemoClick) {
+        let location = 'unknown';
+        if (id === 'nav-cta') location = 'nav_bar';
+        else if (id === 'hero-cta') location = 'hero_section';
+        else if (id === 'footer-cta') location = 'cta_section';
+        else if (id === 'archive-start-btn') location = 'archive_empty';
+        else if (id === 'footer-nav-open-app') location = 'footer_nav';
+        window.trackDemoClick(location);
+      }
+
       onOpenLimitModal();
     };
 
     const handlePricingClick = (e: Event) => {
       e.preventDefault();
+      const target = e.currentTarget as HTMLElement;
+      const id = target.id;
+
+      // GA Tracking
+      if (window.trackDemoClick) {
+        window.trackDemoClick(`pricing_${id === 'pricing-free-btn' ? 'free' : 'pro'}`);
+      }
+
       onOpenWaitlistModal();
     };
 
@@ -957,7 +979,7 @@ const LandingHTML = React.memo(({
                 <a href="#flow" class="block transition-colors hover:text-white" data-i18n="footer_product_link_1">How It Works</a>
                 <a href="#features" class="block transition-colors hover:text-white" data-i18n="footer_product_link_2">Attraction Selection</a>
                 <a href="#features" class="block transition-colors hover:text-white" data-i18n="footer_product_link_3">Itinerary Editing</a>
-                <a href="#/preferences" class="block transition-colors hover:text-white" data-i18n="footer_product_link_4">Open App</a>
+                <a href="#/preferences" id="footer-nav-open-app" class="block transition-colors hover:text-white" data-i18n="footer_product_link_4">Open App</a>
               </div>
             </div>
 

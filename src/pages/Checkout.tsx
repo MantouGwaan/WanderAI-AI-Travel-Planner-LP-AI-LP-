@@ -38,6 +38,11 @@ export default function Checkout() {
 
       if (response.ok) {
         setIsSuccess(true);
+        
+        // GA Tracking
+        if (window.trackLeadGeneration) {
+          window.trackLeadGeneration('demo_pdf_export');
+        }
       } else {
         console.error('Formspree submission failed');
       }
