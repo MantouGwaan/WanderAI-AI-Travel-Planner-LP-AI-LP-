@@ -7,7 +7,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { MapPin, Clock, AlertTriangle, Send, RefreshCw, ChevronRight, CheckCircle2, GripVertical, Trash2, CalendarDays, Plus, Car, Footprints, Bus, Bike, FileText, Mail, X, Utensils, Hotel, Lightbulb } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { GoogleGenAI, Type } from '@google/genai';
+import { Type } from '@google/genai';
 import { GoogleMap, useJsApiLoader, Marker, DirectionsRenderer, Autocomplete } from '@react-google-maps/api';
 import { formatDestinations } from '../utils';
 
@@ -331,17 +331,22 @@ How would you like to refine your experience today? I can swap destinations, or 
           const systemInstruction = getItinerarySystemInstruction(preferences);
           const prompt = getItineraryPrompt(preferences, attractionsContext);
 
-          const ai = new GoogleGenAI({ apiKey: (import.meta as any).env.VITE_GEMINI_API_KEY });
-          const response = await ai.models.generateContent({
-            model: 'gemini-3.1-pro-preview',
-            contents: prompt,
-            config: {
+          const response = await fetch('/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'initial',
               systemInstruction,
-              responseMimeType: 'application/json',
-            }
+              prompt
+            })
           });
 
-          const data = JSON.parse(response.text || '[]');
+          if (!response.ok) {
+            throw new Error(`API error: ${response.statusText}`);
+          }
+
+          const result = await response.json();
+          const data = JSON.parse(result.text || '[]');
           
           // Map AI response back to our store structure, preserving images from selectedAttractions
           const enrichedItinerary = await Promise.all(data.map(async (day: any) => {
@@ -582,32 +587,37 @@ How would you like to refine your experience today? I can swap destinations, or 
           required: ['message', 'updatedItinerary']
         };
 
-        const ai = new GoogleGenAI({ apiKey: (import.meta as any).env.VITE_GEMINI_API_KEY });
-        const chat = ai.chats.create({
-          model: 'gemini-3.1-pro-preview',
-          config: {
+        const response = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'chat',
             systemInstruction,
-            responseMimeType: 'application/json',
+            history: chatHistory,
+            message: textToSend,
             responseSchema
-          },
-          history: chatHistory
+          })
         });
 
-        const response = await chat.sendMessage({ message: textToSend });
-        const result = JSON.parse(response.text || '{}');
+        if (!response.ok) {
+          throw new Error(`API error: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        const parsedResult = JSON.parse(result.text || '{}');
       
-      if (result.message) {
+      if (parsedResult.message) {
         setMessages(prev => [...prev, { 
           role: 'ai', 
-          text: result.message,
-          alternatives: result.alternatives 
+          text: parsedResult.message,
+          alternatives: parsedResult.alternatives 
         }]);
       }
       
-      if (result.updatedItinerary && Array.isArray(result.updatedItinerary)) {
+      if (parsedResult.updatedItinerary && Array.isArray(parsedResult.updatedItinerary)) {
         // Only update if it's actually different or if AI is sure
         // With "Propose don't apply", AI should mostly return the same itinerary
-        setItinerary(result.updatedItinerary);
+        setItinerary(parsedResult.updatedItinerary);
       }
     } catch (error) {
       console.error(error);

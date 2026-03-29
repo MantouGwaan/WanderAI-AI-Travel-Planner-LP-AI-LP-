@@ -1,4 +1,4 @@
-import { GoogleGenAI } from '@google/genai';
+// import { GoogleGenAI } from '@google/genai';
 
 export async function testGeminiAPI() {
   console.log("%c[Gemini API Diagnostic] Starting test...", "color: #059669; font-weight: bold;");
@@ -14,25 +14,30 @@ export async function testGeminiAPI() {
   console.log(`%c[Gemini API Diagnostic] API Key found (Length: ${apiKey.length})`, "color: #2563eb;");
 
   try {
-    const genAI = new GoogleGenAI({ apiKey });
-    console.log("%c[Gemini API Diagnostic] Sending ping to gemini-3-flash-preview...", "color: #2563eb;");
+    console.log("%c[Gemini API Diagnostic] Sending ping to /api/generate...", "color: #2563eb;");
     
     const startTime = Date.now();
-    const response = await genAI.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: 'Reply with exactly one word: "pong".',
+    const response = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'initial',
+        prompt: 'Reply with exactly one word: "pong".',
+      })
     });
     const duration = Date.now() - startTime;
 
-    if (response.text) {
+    if (response.ok) {
+      const result = await response.json();
       const msg = `✅ SUCCESS: API is working perfectly! (Latency: ${duration}ms)`;
       console.log("%c" + msg, "color: #16a34a; font-weight: bold; font-size: 14px;");
-      console.log(`Model replied: "${response.text.trim()}"`);
+      console.log(`Model replied: "${result.text.trim()}"`);
       return { success: true, message: msg, latency: duration };
     } else {
-      const msg = "⚠️ WARNING: API connected but returned an empty response.";
-      console.warn(msg);
-      return { success: true, message: msg };
+      const errorData = await response.json();
+      const msg = `❌ FAILED: API returned an error: ${errorData.error || response.statusText}`;
+      console.error("%c" + msg, "color: #dc2626; font-weight: bold; font-size: 14px;");
+      return { success: false, reason: msg };
     }
   } catch (error: any) {
     console.error("%c❌ FAILED: API Request threw an error.", "color: #dc2626; font-weight: bold; font-size: 14px;");

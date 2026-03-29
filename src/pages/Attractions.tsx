@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppStore, Attraction } from '../store';
 import { ATTRACTIONS_SYSTEM_INSTRUCTION, getAttractionsPrompt } from '../constants/prompts';
 import { Star, Clock, DollarSign, CheckCircle2, PlusCircle, ArrowRight, MessageSquareText, X, RefreshCw } from 'lucide-react';
-import { GoogleGenAI, Type } from '@google/genai';
+import { Type } from '@google/genai';
 import { useJsApiLoader } from '@react-google-maps/api';
 import { formatDestinations } from '../utils';
 
@@ -132,57 +132,64 @@ export default function Attractions() {
         
         const prompt = getAttractionsPrompt(destinations, targetCountPerCity, interestsStr, preferences.currency);
 
-        const ai = new GoogleGenAI({ apiKey: (import.meta as any).env.VITE_GEMINI_API_KEY });
-        const response = await ai.models.generateContent({
-          model: 'gemini-3.1-pro-preview',
-          contents: prompt,
-          config: {
-            systemInstruction: ATTRACTIONS_SYSTEM_INSTRUCTION,
-            responseMimeType: 'application/json',
-            responseSchema: {
-              type: Type.ARRAY,
-              items: {
+        const responseSchema = {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              id: { type: Type.STRING },
+              name: { type: Type.STRING },
+              image: { type: Type.STRING, description: "Leave empty string" },
+              rating: { type: Type.NUMBER },
+              summary: { type: Type.STRING },
+              tags: { type: Type.ARRAY, items: { type: Type.STRING } },
+              category: { type: Type.STRING, description: "The category or interest this attraction belongs to" },
+              openHours: { type: Type.STRING },
+              price: { type: Type.STRING },
+              duration: { type: Type.NUMBER, description: "Duration in hours" },
+              cityName: { type: Type.STRING, description: "The name of the city this attraction is in" },
+              location: {
                 type: Type.OBJECT,
                 properties: {
-                  id: { type: Type.STRING },
-                  name: { type: Type.STRING },
-                  image: { type: Type.STRING, description: "Leave empty string" },
-                  rating: { type: Type.NUMBER },
-                  summary: { type: Type.STRING },
-                  tags: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  category: { type: Type.STRING, description: "The category or interest this attraction belongs to" },
-                  openHours: { type: Type.STRING },
-                  price: { type: Type.STRING },
-                  duration: { type: Type.NUMBER, description: "Duration in hours" },
-                  cityName: { type: Type.STRING, description: "The name of the city this attraction is in" },
-                  location: {
-                    type: Type.OBJECT,
-                    properties: {
-                      lat: { type: Type.NUMBER },
-                      lng: { type: Type.NUMBER }
-                    },
-                    required: ["lat", "lng"]
-                  },
-                  reviews: {
-                    type: Type.ARRAY,
-                    items: {
-                      type: Type.OBJECT,
-                      properties: {
-                        source: { type: Type.STRING },
-                        text: { type: Type.STRING },
-                        rating: { type: Type.NUMBER }
-                      },
-                      required: ["source", "text", "rating"]
-                    }
-                  }
+                  lat: { type: Type.NUMBER },
+                  lng: { type: Type.NUMBER }
                 },
-                required: ["id", "name", "image", "rating", "summary", "tags", "category", "openHours", "price", "duration", "location", "reviews", "cityName"]
+                required: ["lat", "lng"]
+              },
+              reviews: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    source: { type: Type.STRING },
+                    text: { type: Type.STRING },
+                    rating: { type: Type.NUMBER }
+                  },
+                  required: ["source", "text", "rating"]
+                }
               }
-            }
+            },
+            required: ["id", "name", "image", "rating", "summary", "tags", "category", "openHours", "price", "duration", "location", "reviews", "cityName"]
           }
+        };
+
+        const response = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'initial',
+            systemInstruction: ATTRACTIONS_SYSTEM_INSTRUCTION,
+            prompt,
+            responseSchema
+          })
         });
 
-        const data = JSON.parse(response.text || '[]');
+        if (!response.ok) {
+          throw new Error(`API error: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        const data = JSON.parse(result.text || '[]');
         if (data && data.length > 0) {
           if (isLoaded && window.google && window.google.maps && window.google.maps.places) {
             const placesService = new window.google.maps.places.PlacesService(document.createElement('div'));
