@@ -11,7 +11,7 @@ export const ATTRACTIONS_SYSTEM_INSTRUCTION = "You are a travel expert providing
  * Generates instructions to fetch a list of attractions based on user-selected destinations, interests, and currency.
  */
 export const getAttractionsPrompt = (destinations: string[], targetCountPerCity: number, interestsStr: string, currency: string) => `Provide a list of top tourist attractions for these cities: ${destinations.join(', ')}.
-Aim for about ${targetCountPerCity} attractions per city.
+Provide exactly ${targetCountPerCity} attractions per city.
 Include attractions that align with the user's interests: ${interestsStr}, but also include other popular categories to provide a diverse experience. Ensure the user's interests are prioritized and well-represented.
 Categorize each attraction into one of the user's interests, or a general category if it doesn't fit perfectly.
 

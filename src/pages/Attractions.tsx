@@ -126,8 +126,8 @@ export default function Attractions() {
 
       setIsLoading(true);
       try {
-        const targetCountPerCity = 5;
-        const targetCount = destinations.length * targetCountPerCity;
+        const targetCount = preferences.duration * 4;
+        const targetCountPerCity = Math.max(5, Math.ceil(targetCount / destinations.length));
         const interestsStr = preferences.interests.length > 0 ? preferences.interests.join(', ') : 'general tourist attractions';
         
         const prompt = getAttractionsPrompt(destinations, targetCountPerCity, interestsStr, preferences.currency);
