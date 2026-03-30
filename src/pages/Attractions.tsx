@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore, Attraction } from '../store';
+import { GoogleGenAI } from "@google/genai";
 import { ATTRACTIONS_SYSTEM_INSTRUCTION, getAttractionsPrompt } from '../constants/prompts';
 import { Star, Clock, DollarSign, CheckCircle2, PlusCircle, ArrowRight, MessageSquareText, X, RefreshCw } from 'lucide-react';
-import { Type } from '@google/genai';
+import { Type } from "@google/genai";
 import { useJsApiLoader } from '@react-google-maps/api';
 import { formatDestinations } from '../utils';
 
@@ -173,23 +174,18 @@ export default function Attractions() {
           }
         };
 
-        const response = await fetch('/api/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'initial',
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || (import.meta as any).env.VITE_GEMINI_API_KEY });
+        const response = await ai.models.generateContent({
+          model: "gemini-3-flash-preview",
+          contents: prompt,
+          config: {
             systemInstruction: ATTRACTIONS_SYSTEM_INSTRUCTION,
-            prompt,
+            responseMimeType: "application/json",
             responseSchema
-          })
+          }
         });
 
-        if (!response.ok) {
-          throw new Error(`API error: ${response.statusText}`);
-        }
-
-        const result = await response.json();
-        const data = JSON.parse(result.text || '[]');
+        const data = JSON.parse(response.text || '[]');
         if (data && data.length > 0) {
           if (isLoaded && window.google && window.google.maps && window.google.maps.places) {
             const placesService = new window.google.maps.places.PlacesService(document.createElement('div'));

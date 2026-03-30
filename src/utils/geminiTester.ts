@@ -1,12 +1,12 @@
-// import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 
 export async function testGeminiAPI() {
   console.log("%c[Gemini API Diagnostic] Starting test...", "color: #059669; font-weight: bold;");
   
-  const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY || (import.meta as any).env.VITE_GEMINI_API_KEY;
 
   if (!apiKey || apiKey === 'undefined') {
-    const msg = "❌ FAILED: VITE_GEMINI_API_KEY is missing or undefined in environment variables.";
+    const msg = "❌ FAILED: GEMINI_API_KEY is missing or undefined in environment variables.";
     console.error("%c" + msg, "color: #dc2626; font-weight: bold;");
     return { success: false, reason: "Missing API Key" };
   }
@@ -14,28 +14,23 @@ export async function testGeminiAPI() {
   console.log(`%c[Gemini API Diagnostic] API Key found (Length: ${apiKey.length})`, "color: #2563eb;");
 
   try {
-    console.log("%c[Gemini API Diagnostic] Sending ping to /api/generate...", "color: #2563eb;");
+    console.log("%c[Gemini API Diagnostic] Calling Gemini 3 Flash directly...", "color: #2563eb;");
     
     const startTime = Date.now();
-    const response = await fetch('/api/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'initial',
-        prompt: 'Reply with exactly one word: "pong".',
-      })
+    const ai = new GoogleGenAI({ apiKey });
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: 'Reply with exactly one word: "pong".',
     });
     const duration = Date.now() - startTime;
 
-    if (response.ok) {
-      const result = await response.json();
+    if (response.text) {
       const msg = `✅ SUCCESS: API is working perfectly! (Latency: ${duration}ms)`;
       console.log("%c" + msg, "color: #16a34a; font-weight: bold; font-size: 14px;");
-      console.log(`Model replied: "${result.text.trim()}"`);
+      console.log(`Model replied: "${response.text.trim()}"`);
       return { success: true, message: msg, latency: duration };
     } else {
-      const errorData = await response.json();
-      const msg = `❌ FAILED: API returned an error: ${errorData.error || response.statusText}`;
+      const msg = `❌ FAILED: API returned an empty response.`;
       console.error("%c" + msg, "color: #dc2626; font-weight: bold; font-size: 14px;");
       return { success: false, reason: msg };
     }

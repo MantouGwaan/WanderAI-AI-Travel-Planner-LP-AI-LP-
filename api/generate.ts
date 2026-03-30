@@ -18,7 +18,7 @@ export default async function handler(req: any, res: any) {
 
     if (type === "initial") {
       const response = await ai.models.generateContent({
-        model: "gemini-3.1-pro-preview",
+        model: "gemini-3-flash-preview",
         contents: prompt,
         config: {
           systemInstruction,
@@ -29,7 +29,7 @@ export default async function handler(req: any, res: any) {
       return res.status(200).json({ text: response.text });
     } else if (type === "chat") {
       const chat = ai.chats.create({
-        model: "gemini-3.1-pro-preview",
+        model: "gemini-3-flash-preview",
         config: {
           systemInstruction,
           responseMimeType: "application/json",
