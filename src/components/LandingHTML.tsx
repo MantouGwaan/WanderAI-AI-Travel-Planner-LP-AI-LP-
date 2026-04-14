@@ -147,7 +147,7 @@ const LandingHTML = React.memo(({
         pricing_free_title: "Free Trial", pricing_free_price: "$0", pricing_free_period: "/forever",
         pricing_feature_itinerary: "Number of Itinerary", pricing_feature_iteration: "Conversational Iteration", pricing_feature_pdf: "Get PDF Itinerary", pricing_feature_preference: "Preferences",
         pricing_free_itinerary: "1", pricing_free_iteration: "1 time", pricing_free_pdf: "No", pricing_free_preference: "Basic 3 settings",
-        pricing_pro_title: "Pro", pricing_pro_price: "9.9", pricing_pro_period: "SGD/Month", pricing_pro_regular: "Regular price 29.9 SGD/Month", pricing_pro_badge: "Early Bird",
+        pricing_pro_title: "Pro", pricing_pro_price: "9.9", pricing_pro_period: "SGD / 30 Days", pricing_pro_regular: "Regular price 29.9 SGD / 30 Days", pricing_pro_badge: "Early Bird", pricing_pro_onetime: "One-time payment. No auto-renewal.",
         pricing_pro_itinerary: "Unlimited", pricing_pro_iteration: "Until you are satisfied", pricing_pro_pdf: "Yes", pricing_pro_preference: "More than 20 options",
         pricing_cta_free: "Start Free Trial", pricing_cta_pro: "Get Pro",
         limit_title: "Free Trial Limit Reached", limit_desc: "You have reached the limit of 1 itinerary for the Free Trial. Upgrade to Pro to create unlimited itineraries and unlock more features.", limit_cta_pricing: "View Pricing", limit_cta_later: "Maybe Later",
@@ -186,7 +186,7 @@ const LandingHTML = React.memo(({
         pricing_free_title: "免费试用", pricing_free_price: "$0", pricing_free_period: "/永久",
         pricing_feature_itinerary: "行程数量", pricing_feature_iteration: "对话式迭代", pricing_feature_pdf: "获取 PDF 行程", pricing_feature_preference: "偏好设置",
         pricing_free_itinerary: "1 个", pricing_free_iteration: "1 次", pricing_free_pdf: "否", pricing_free_preference: "基础 3 项设置",
-        pricing_pro_title: "专业版", pricing_pro_price: "9.9", pricing_pro_period: "新币/月", pricing_pro_regular: "原价 29.9 新币/月", pricing_pro_badge: "早鸟价",
+        pricing_pro_title: "专业版", pricing_pro_price: "9.9", pricing_pro_period: "新币 / 30天", pricing_pro_regular: "原价 29.9 新币 / 30天", pricing_pro_badge: "早鸟价", pricing_pro_onetime: "单次付费，无自动续费。",
         pricing_pro_itinerary: "无限量", pricing_pro_iteration: "直到您满意为止", pricing_pro_pdf: "是", pricing_pro_preference: "超过 20 个选项",
         pricing_cta_free: "开始免费试用", pricing_cta_pro: "获取专业版",
         limit_title: "已达到免费试用限制", limit_desc: "您已达到免费试用 1 个行程的限制。升级到专业版以创建无限行程并解锁更多功能。", limit_cta_pricing: "查看价格", limit_cta_later: "稍后再说",
@@ -459,9 +459,10 @@ const LandingHTML = React.memo(({
               <h3 class="text-xl font-semibold text-slate-900" data-i18n="pricing_pro_title">Pro</h3>
               <div class="mt-4 flex items-baseline text-5xl font-extrabold text-slate-900">
                 <span data-i18n="pricing_pro_price">9.9</span>
-                <span class="ml-1 text-xl font-medium text-slate-500" data-i18n="pricing_pro_period">SGD/Month</span>
+                <span class="ml-1 text-xl font-medium text-slate-500" data-i18n="pricing_pro_period">SGD / 30 Days</span>
               </div>
-              <p class="mt-2 text-sm text-slate-500 line-through" data-i18n="pricing_pro_regular">Regular price 29.9 SGD/Month</p>
+              <p class="mt-2 text-sm text-slate-500 line-through" data-i18n="pricing_pro_regular">Regular price 29.9 SGD / 30 Days</p>
+              <p class="mt-1 text-sm font-medium text-[#047857]" data-i18n="pricing_pro_onetime">One-time payment. No auto-renewal.</p>
               <ul class="mt-8 space-y-4 flex-1">
                 <li class="flex items-start">
                   <svg class="h-6 w-6 text-[#047857] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
